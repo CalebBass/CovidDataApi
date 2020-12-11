@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CovidData.Api</name>
+    </assembly>
+    <members>
+        <member name="M:CovidData.Api.Controllers.v1_0.CovidTrackingProjectController.GetAllUsaCdcData">
+            <summary>
+            Gets the United States' current Covid data
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:CovidData.Api.Controllers.v1_0.CovidTrackingProjectController.GetCurrentStateData(System.String)">
+            <summary>
+            Gets the specified state's (by 2 letter abbreviation) current Covid data
+            </summary>
+            <param name="state"></param>
+            <returns></returns>
+        </member>
+        <member name="M:CovidData.Api.Controllers.v1_0.CovidTrackingProjectController.GetHistoricalStateData(System.String)">
+            <summary>
+            Gets a specified state's historical Covid data
+            </summary>
+            <param name="state"></param>
+            <returns>List of stats by day since record=keeping began</returns>
+        </member>
+        <member name="M:CovidData.Api.Controllers.v1_0.CovidTrackingProjectController.GetHistoricalStateData(System.String,System.String)">
+            <summary>
+            Gets a state's Covid data for a specific date
+            </summary>
+            <param name="state">Two-letter state abbreviation</param>
+            <param name="date">Date format (yyyymmddd): 20201127</param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

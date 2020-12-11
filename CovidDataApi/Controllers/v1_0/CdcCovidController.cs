@@ -3,13 +3,14 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CovidData.Api.Config;
 using CovidData.Api.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
 namespace CovidData.Api.Controllers.v1_0
 {
-
+    [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]

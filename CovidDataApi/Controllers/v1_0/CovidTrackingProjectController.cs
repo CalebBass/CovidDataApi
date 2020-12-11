@@ -7,11 +7,13 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using CovidData.Api.Config;
 using CovidData.Api.Response;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace CovidData.Api.Controllers.v1_0
 {
+    [Authorize]
     [ApiController]
     [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -26,6 +28,10 @@ namespace CovidData.Api.Controllers.v1_0
             _httpClientFactory = httpClientFactory;
         }
 
+        /// <summary>
+        /// Gets the United States' current Covid data
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("usa/current"), MapToApiVersion("1.0")]
         [ProducesResponseType(typeof(List<CovidTrackingUsaCurrentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -56,6 +62,11 @@ namespace CovidData.Api.Controllers.v1_0
             }
         }
 
+        /// <summary>
+        /// Gets the specified state's (by 2 letter abbreviation) current Covid data
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns></returns>
         [HttpGet("states/{state}/current"), MapToApiVersion("1.0")]
         [ProducesResponseType(typeof(CovidTrackingStateResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -87,6 +98,11 @@ namespace CovidData.Api.Controllers.v1_0
         }
 
         // accept a date or range and filter on the backend
+        /// <summary>
+        /// Gets a specified state's historical Covid data
+        /// </summary>
+        /// <param name="state"></param>
+        /// <returns>List of stats by day since record=keeping began</returns>
         [HttpGet("states/{state}/historical"), MapToApiVersion("1.0")]
         [ProducesResponseType(typeof(List<CovidTrackingStateResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -117,6 +133,12 @@ namespace CovidData.Api.Controllers.v1_0
             }
         }
 
+        /// <summary>
+        /// Gets a state's Covid data for a specific date
+        /// </summary>
+        /// <param name="state">Two-letter state abbreviation</param>
+        /// <param name="date">Date format (yyyymmddd): 20201127</param>
+        /// <returns></returns>
         [HttpGet("states/{state}/historical/{date}"), MapToApiVersion("1.0")]
         [ProducesResponseType(typeof(CovidTrackingStateResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

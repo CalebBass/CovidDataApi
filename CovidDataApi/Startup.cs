@@ -1,11 +1,18 @@
 using System;
+using System.Linq;
+using System.Security.Cryptography;
 using CovidData.Api.Config;
+using CovidData.Api.Swagger;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace CovidData.Api
 {
@@ -31,10 +38,10 @@ namespace CovidData.Api
 
             services.AddApiVersioning();
 
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "CovidDataApi", Version = "v1" });
-            });
+//            services.AddSwaggerGen(c =>
+//            {
+//                c.SwaggerDoc("v1", new OpenApiInfo { Title = "CovidDataApi", Version = "v1" });
+//            });
 
             // creates external API http clients
             ConfigureHttpClients(services);
@@ -44,30 +51,9 @@ namespace CovidData.Api
 
             RegisterConfigsAsConcreteTypes(services);
 
-//            services.AddAuthentication(options =>
-//                {
-//                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//                })
-//                .AddJwtBearer(options =>
-//                {
-//                    SecurityKey rsa = services.BuildServiceProvider().GetRequiredService<RsaSecurityKey>();
-//
-//                    options.IncludeErrorDetails = true; // good for debugging
-//
-//                    // jwt bearer validation properties
-//                    options.TokenValidationParameters = new TokenValidationParameters
-//                    {
-//                        IssuerSigningKey = rsa,
-//                        ValidAudience = "PhaseTwo",
-//                        ValidIssuer = "cbass",
-//                        RequireSignedTokens = true,
-//                        RequireExpirationTime = true,
-//                        ValidateLifetime = true,
-//                        ValidateAudience = true,
-//                        ValidateIssuer = true
-//                    };
-//                });
+            ConfigureJwtValidation(services);
+
+            ConfigureSwaggerGen(services);
         }
 
 
@@ -78,7 +64,14 @@ namespace CovidData.Api
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CovidDataApi v1"));
+                app.UseSwaggerUI(
+                    c =>
+                    {
+                        c.SwaggerEndpoint("/swagger/v1.0/swagger.json", "Covid Data API v1.0");
+                        c.SwaggerEndpoint("/swagger/v1.1/swagger.json", "Covid Data API v1.1");
+                        c.SwaggerEndpoint("/swagger/v1.2/swagger.json", "Covid Data API v1.2");
+                        c.SwaggerEndpoint("/swagger/v1.3/swagger.json", "Covid Data API v1.3");
+                    });
             }
 
             app.UseHttpsRedirection();
@@ -105,16 +98,7 @@ namespace CovidData.Api
 
         private void RegisterServices(IServiceCollection services)
         {
-//            services.AddSingleton<RsaSecurityKey>(options =>
-//            {
-//                RSA rsa = RSA.Create();
-//                rsa.ImportRSAPublicKey(
-//                    source: Convert.FromBase64String(Configuration.GetValue<string>("JwtAttributes:PublicRsaKey")),
-//                    bytesRead: out int _
-//                );
-//
-//                return new RsaSecurityKey(rsa);
-//            });
+            
         }
 
         private void RegisterConfigsAsConcreteTypes(IServiceCollection services)
@@ -123,6 +107,132 @@ namespace CovidData.Api
             services.Configure<CovidTrackingProjectApiConfig>(Configuration.GetSection("CovidTrackingProject"));
             services.Configure<JohnHopkinsApiConfig>(Configuration.GetSection("JohnsHopkins"));
             services.Configure<NovelCovidApiConfig>(Configuration.GetSection("NovelCovidApi"));
+        }
+
+        private void ConfigureJwtValidation(IServiceCollection services)
+        {
+            services.AddSingleton<RsaSecurityKey>(provider =>
+            {
+                // It's required to register the RSA key with dependency injection.
+                // If you don't do this, the RSA instance will be prematurely disposed.
+
+                var rsaBase64String = Configuration.GetValue<string>("JwtAttributes:PublicRsaKey");
+
+                RSA rsa = RSA.Create();
+                rsa.ImportSubjectPublicKeyInfo(
+                    source: Convert.FromBase64String(rsaBase64String),
+                    bytesRead: out int _
+                );
+
+                return new RsaSecurityKey(rsa);
+            });
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                SecurityKey rsa = services.BuildServiceProvider().GetRequiredService<RsaSecurityKey>();
+
+                options.IncludeErrorDetails = true; // <- great for debugging
+
+                // Configure the actual Bearer validation
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    IssuerSigningKey = rsa,
+                    ValidAudience = "PhaseTwo",
+                    ValidIssuer = "cbass",
+                    RequireSignedTokens = true,
+                    RequireExpirationTime = true, // <- JWTs are required to have "exp" property set
+                    ValidateLifetime = true, // <- the "exp" will be validated
+                    ValidateAudience = true,
+                    ValidateIssuer = true,
+                };
+            });
+        }
+
+
+        private static void ConfigureSwaggerGen(IServiceCollection services)
+        {
+            services.AddApiVersioning(); //needed for swagger
+            services.AddSwaggerGen(
+                c =>
+                {
+                    c.SwaggerDoc(
+                        "v1.0",
+                        new OpenApiInfo
+                        {
+                            Title = "QuickSource API",
+                            Version = "v1.0"
+                        });
+                    c.SwaggerDoc(
+                        "v1.1",
+                        new OpenApiInfo
+                        {
+                            Title = "QuickSource API",
+                            Version = "v1.1"
+                        });
+                    c.SwaggerDoc(
+                        "v1.2",
+                        new OpenApiInfo
+                        {
+                            Title = "QuickSource API",
+                            Version = "v1.2"
+                        });
+
+                    c.SwaggerDoc(
+                        "v1.3",
+                        new OpenApiInfo
+                        {
+                            Title = "QuickSource API",
+                            Version = "v1.3"
+                        });
+                    // configure filters
+                    c.OperationFilter<RemoveVersionParameterFilter>();
+                    c.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
+                    // Take API versioning attributes from ASP.NET into account
+                    c.DocInclusionPredicate(
+                        (version, desc) =>
+                        {
+                            var versionAttributes = desc.CustomAttributes().OfType<ApiVersionAttribute>()
+                                .SelectMany(attr => attr.Versions);
+                            var mappingAttributes = desc.CustomAttributes().OfType<MapToApiVersionAttribute>()
+                                .SelectMany(attr => attr.Versions).ToArray();
+                            return versionAttributes.Any(v => $"v{v}" == version)
+                                   && (!mappingAttributes.Any() || mappingAttributes.Any(v => $"v{v}" == version));
+                        });
+                    c.EnableAnnotations();
+
+                    OpenApiSecurityScheme securityDefinition = new OpenApiSecurityScheme()
+                    {
+                        Name = "Bearer",
+                        BearerFormat = "JWT",
+                        Scheme = "bearer",
+                        Description = "Specify the authorization token.",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                    };
+                    c.AddSecurityDefinition("jwt_auth", securityDefinition);
+
+                    // Make sure swagger UI requires a Bearer token specified
+                    OpenApiSecurityScheme securityScheme = new OpenApiSecurityScheme()
+                    {
+                        Reference = new OpenApiReference()
+                        {
+                            Id = "jwt_auth",
+                            Type = ReferenceType.SecurityScheme
+                        }
+                    };
+                    OpenApiSecurityRequirement securityRequirements = new OpenApiSecurityRequirement()
+                    {
+                        {securityScheme, new string[] { }},
+                    };
+                    c.AddSecurityRequirement(securityRequirements);
+
+                    c.IncludeXmlComments(
+                        $"{AppDomain.CurrentDomain.BaseDirectory}/SwaggerComments.xml");
+                });
         }
     }
 }
