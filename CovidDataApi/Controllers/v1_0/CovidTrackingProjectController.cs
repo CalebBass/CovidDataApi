@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -35,7 +36,7 @@ namespace CovidData.Api.Controllers.v1_0
         [HttpGet("usa/current"), MapToApiVersion("1.0")]
         [ProducesResponseType(typeof(List<CovidTrackingUsaCurrentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<List<CovidTrackingUsaCurrentResponse>>> GetAllUsaCdcData()
+        public async Task<ActionResult<List<CovidTrackingUsaCurrentResponse>>> GetAllUsaCurrentData()
         {
             try
             {
@@ -46,7 +47,7 @@ namespace CovidData.Api.Controllers.v1_0
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return StatusCode(500);
+                    return StatusCode((int)response.StatusCode);
                 }
 
                 var data = await response.Content.ReadAsStreamAsync();
@@ -81,7 +82,7 @@ namespace CovidData.Api.Controllers.v1_0
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return StatusCode(500);
+                    return StatusCode((int)response.StatusCode);
                 }
 
                 var data = await response.Content.ReadAsStreamAsync();
@@ -117,7 +118,7 @@ namespace CovidData.Api.Controllers.v1_0
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return StatusCode(500);
+                    return StatusCode((int)response.StatusCode);
                 }
 
                 var data = await response.Content.ReadAsStreamAsync();
@@ -153,7 +154,7 @@ namespace CovidData.Api.Controllers.v1_0
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    return StatusCode(500);
+                    return StatusCode((int)response.StatusCode);
                 }
 
                 var data = await response.Content.ReadAsStreamAsync();

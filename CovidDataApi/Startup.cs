@@ -36,6 +36,9 @@ namespace CovidData.Api
 //                });
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNameCaseInsensitive = true);
 
+            services.AddCors();
+
+
             services.AddApiVersioning();
 
 //            services.AddSwaggerGen(c =>
@@ -74,6 +77,11 @@ namespace CovidData.Api
                     });
             }
 
+            app.UseCors(builder => builder
+                .AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader());
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
@@ -92,7 +100,6 @@ namespace CovidData.Api
             services.AddHttpClient("CdcApi", c =>
             {
                 c.BaseAddress = new Uri(Configuration.GetValue<string>("CdcApi:CdcAllUsaBaseUrl"));
-                c.DefaultRequestHeaders.Add("asdfasd", "asdf");
             });
         }
 
@@ -116,11 +123,9 @@ namespace CovidData.Api
                 // It's required to register the RSA key with dependency injection.
                 // If you don't do this, the RSA instance will be prematurely disposed.
 
-                var rsaBase64String = Configuration.GetValue<string>("JwtAttributes:PublicRsaKey");
-
                 RSA rsa = RSA.Create();
                 rsa.ImportSubjectPublicKeyInfo(
-                    source: Convert.FromBase64String(rsaBase64String),
+                    source: Convert.FromBase64String(Configuration.GetValue<string>("JwtAttributes:PublicRsaKey")),
                     bytesRead: out int _
                 );
 
@@ -163,21 +168,21 @@ namespace CovidData.Api
                         "v1.0",
                         new OpenApiInfo
                         {
-                            Title = "QuickSource API",
+                            Title = "CovidData API",
                             Version = "v1.0"
                         });
                     c.SwaggerDoc(
                         "v1.1",
                         new OpenApiInfo
                         {
-                            Title = "QuickSource API",
+                            Title = "CovidData API",
                             Version = "v1.1"
                         });
                     c.SwaggerDoc(
                         "v1.2",
                         new OpenApiInfo
                         {
-                            Title = "QuickSource API",
+                            Title = "CovidData API",
                             Version = "v1.2"
                         });
 
@@ -185,12 +190,13 @@ namespace CovidData.Api
                         "v1.3",
                         new OpenApiInfo
                         {
-                            Title = "QuickSource API",
+                            Title = "CovidData API",
                             Version = "v1.3"
                         });
                     // configure filters
                     c.OperationFilter<RemoveVersionParameterFilter>();
                     c.DocumentFilter<ReplaceVersionWithExactValueInPathFilter>();
+
                     // Take API versioning attributes from ASP.NET into account
                     c.DocInclusionPredicate(
                         (version, desc) =>
